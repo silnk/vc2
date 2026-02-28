@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business card generator · front & back · rounded corners</title>
+    <!-- html2pdf (stable) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: #e8ecf2;
+            display: flex;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+        .container {
+            max-width: 1300px;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+        }
+        /* form panel */
+        .form-panel {
+            flex: 1 1 360px;
+            background: white;
+            border-radius: 28px;
+            padding: 2rem 1.8rem;
+            box-shadow: 0 20px 35px -8px rgba(0,0,0,0.2);
+            height: fit-content;
+        }
+        .form-panel h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(145deg, #0b2b44, #1d4a6e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .sub {
+            color: #3a5670;
+            margin-bottom: 2rem;
+            font-weight: 400;
+            border-left: 5px solid #2b6c9e;
+            padding-left: 1rem;
+        }
+        .input-group {
+            margin-bottom: 1.3rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            letter-spacing: 0.3px;
+            color: #1f3a57;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .input-group input, .input-group textarea {
+            background: #f0f5fa;
+            border: 1px solid #bdcbd9;
+            border-radius: 18px;
+            padding: 12px 18px;
+            font-size: 0.95rem;
+            transition: 0.2s;
+            resize: vertical;
+            font-family: inherit;
+        }
+        .input-group input:focus, .input-group textarea:focus {
+            outline: none;
+            border-color: #1d6f9e;
+            background: #ffffff;
+            box-shadow: 0 0 0 3px rgba(29,111,158,0.15);
+        }
+        .flex-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .flex-row .input-group {
+            flex: 1 1 160px;
+        }
+        /* logo upload area */
+        .logo-upload {
+            background: #eef3f9;
+            border-radius: 24px;
+            padding: 1.2rem;
+            margin: 1.5rem 0 1rem;
+            border: 2px dashed #a0b8cf;
+            text-align: center;
+        }
+        .logo-upload label {
+            font-weight: 700;
+            color: #0f3b5c;
+            display: block;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .logo-upload input {
+            opacity: 0;
+            position: absolute;
+            width: 0;
+        }
+        .upload-btn {
+            background: #1f4b74;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            padding: 10px 30px;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+            cursor: pointer;
+            display: inline-block;
+            margin-top: 6px;
+            box-shadow: 0 5px 10px rgba(0,40,70,0.2);
+            transition: 0.15s;
+        }
+        .upload-btn:hover {
+            background: #0f3b5e;
+        }
+        .preview-logo {
+            max-width: 100px;
+            max-height: 60px;
+            object-fit: contain;
+            margin: 10px auto 0;
+            display: none;
+            border-radius: 12px;
+            background: white;
+            padding: 6px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        /* card preview panel */
+        .preview-panel {
+            flex: 1 1 550px;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .preview-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            justify-content: center;
+        }
+        .card-outer {
+            background: white;
+            border-radius: 28px;
+            box-shadow: 0 20px 30px -8px rgba(0,35,60,0.3);
+            width: 330px;
+            height: 200px;
+            transition: transform 0.2s;
+        }
+        .card-outer:hover {
+            transform: scale(1.01);
+        }
+        .card-front, .card-back {
+            width: 100%;
+            height: 100%;
+            border-radius: 28px;      /* rounded corners as requested */
+            background: white;
+            padding: 20px 22px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: inset 0 1px 8px rgba(0,0,0,0.02), 0 0 0 1px #dde3eb;
+            font-size: 13px;
+            line-height: 1.45;
+            color: #1d2f44;
+        }
+        /* front layout */
+        .front-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-height: 55px;
+        }
+        .front-logo {
+            max-width: 70px;
+            max-height: 55px;
+            object-fit: contain;
+            background: transparent;
+        }
+        .company-details {
+            font-weight: 600;
+            font-size: 13px;
+            line-height: 1.3;
+            color: #0f344f;
+        }
+        .company-name {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 3px;
+            color: #092435;
+        }
+        .reg-row {
+            font-size: 11px;
+            color: #2f4b6b;
+            font-weight: 400;
+            margin-top: 4px;
+        }
+        .middle-info {
+            margin: 8px 0 6px;
+        }
+        .person-name {
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.2px;
+            color: #021c30;
+        }
+        .designation {
+            font-size: 13px;
+            color: #2d587c;
+            font-weight: 500;
+            margin: 2px 0 6px;
+        }
+        .contact-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: #1b3e5c;
+            word-break: break-word;
+        }
+        .contact-row span {
+            font-weight: 500;
+        }
+        /* back side */
+        .card-back {
+            justify-content: center;
+            align-items: center;
+            background: #f7fafd;
+        }
+        .back-logo {
+            max-width: 130px;
+            max-height: 100px;
+            object-fit: contain;
+            background: transparent;
+        }
+        /* generate button */
+        .action-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        .btn-pdf {
+            background: #0f4434;
+            color: white;
+            border: none;
+            border-radius: 60px;
+            padding: 14px 32px;
+            font-weight: 600;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 8px 16px rgba(10,60,40,0.3);
+            transition: 0.15s;
+            border: 1px solid #1b725a;
+            flex: 1 1 auto;
+        }
+        .btn-pdf:hover {
+            background: #0b3528;
+        }
+        .note {
+            font-size: 0.85rem;
+            color: #306491;
+            margin-top: 1.2rem;
+            background: #e1ecf5;
+            padding: 10px 16px;
+            border-radius: 50px;
+        }
+        hr {
+            margin: 1.5rem 0 1rem;
+            border: 1px solid #cbdae9;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <!-- left: input form -->
+    <div class="form-panel">
+        <h2>⌘ business card studio</h2>
+        <div class="sub">front & back · rounded · instant preview</div>
+
+        <div class="logo-upload">
+            <label for="logoInput" class="upload-btn">📎 upload company logo</label>
+            <input type="file" id="logoInput" accept="image/*">
+            <img id="logoPreview" class="preview-logo" alt="logo preview">
+            <p style="font-size:12px; margin-top:8px; color:#304d6d;">* appears on front & back</p>
+        </div>
+
+        <div class="input-group">
+            <label>🏢 company name</label>
+            <input type="text" id="companyName" placeholder="e.g. ALBANIAN VENTURES" value="ALBANIAN VENTURES">
+        </div>
+        <div class="input-group">
+            <label>📍 company address</label>
+            <textarea id="companyAddress" rows="2">Rr. Deshmoret e Kombit, Torre Drin, Tirana 1001</textarea>
+        </div>
+        <div class="input-group">
+            <label>🔖 registration no.</label>
+            <input type="text" id="regNo" placeholder="NUIS / VAT" value="NUIS L12345001A">
+        </div>
+
+        <div class="flex-row">
+            <div class="input-group">
+                <label>🧑 person name</label>
+                <input type="text" id="personName" value="Arta Hoxha">
+            </div>
+            <div class="input-group">
+                <label>📛 designation</label>
+                <input type="text" id="designation" value="Business Development">
+            </div>
+        </div>
+
+        <div class="flex-row">
+            <div class="input-group">
+                <label>📞 mobile</label>
+                <input type="text" id="mobile" value="+355 69 123 4567">
+            </div>
+            <div class="input-group">
+                <label>✉️ email</label>
+                <input type="email" id="email" value="a.hoxha@albanianventures.al">
+            </div>
+        </div>
+
+        <hr>
+        <div class="action-buttons">
+            <button class="btn-pdf" id="generatePDF">⬇️ download PDF (front & back)</button>
+        </div>
+        <div class="note">
+            ⚡ PDF contains two pages: front side (with all details) and back side (only logo).<br>
+            Each card has <strong>rounded corners (28px)</strong> as required. Logo on back appears centered.
+        </div>
+    </div>
+
+    <!-- right side: preview cards -->
+    <div class="preview-panel">
+        <div class="preview-row">
+            <!-- front preview -->
+            <div class="card-outer">
+                <div class="card-front" id="previewFront">
+                    <div class="front-header">
+                        <img class="front-logo" id="frontLogoImg" src="" alt="logo" style="display:none;">
+                        <div class="company-details">
+                            <div class="company-name" id="previewCompanyName">ALBANIAN VENTURES</div>
+                            <div id="previewAddress">Rr. Deshmoret e Kombit, Torre Drin, Tirana 1001</div>
+                            <div class="reg-row" id="previewReg">NUIS L12345001A</div>
+                        </div>
+                    </div>
+                    <div class="middle-info">
+                        <div class="person-name" id="previewPerson">Arta Hoxha</div>
+                        <div class="designation" id="previewDesig">Business Development</div>
+                    </div>
+                    <div class="contact-row">
+                        <span>📱</span> <span id="previewMobile">+355 69 123 4567</span>
+                    </div>
+                    <div class="contact-row">
+                        <span>✉️</span> <span id="previewEmail">a.hoxha@albanianventures.al</span>
+                    </div>
+                </div>
+            </div>
+            <!-- back preview -->
+            <div class="card-outer">
+                <div class="card-back" id="previewBack">
+                    <img class="back-logo" id="backLogoImg" src="" alt="company logo" style="max-width:120px; max-height:90px;">
+                </div>
+            </div>
+        </div>
+        <div style="text-align:center; color:#25415b; font-weight:500;">⬆️ live preview · front (left) & back (right)</div>
+    </div>
+</div>
+
+<!-- hidden printable wrapper for pdf (exactly two cards) -->
+<div id="pdfCardsContainer" style="display: none;">
+    <!-- front page -->
+    <div class="pdf-card-front" style="width: 330px; height: 200px; background: white; border-radius: 28px; padding: 20px 22px; display: flex; flex-direction: column; justify-content: space-between; margin: 15px; box-shadow: 0 0 0 1px #ccc; font-family: 'Inter', sans-serif;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <img class="pdf-front-logo" src="" style="max-width:70px; max-height:55px; object-fit:contain;">
+            <div>
+                <div style="font-size:15px; font-weight:700; color:#092435;" id="pdfCoName"></div>
+                <div style="font-size:12px; color:#0f344f;" id="pdfAddr"></div>
+                <div style="font-size:11px; color:#2f4b6b;" id="pdfReg"></div>
+            </div>
+        </div>
+        <div>
+            <div style="font-size:17px; font-weight:700; color:#021c30;" id="pdfPName"></div>
+            <div style="font-size:13px; color:#2d587c; margin:2px 0 6px;" id="pdfDesig"></div>
+            <div style="display: flex; gap:10px; font-size:12px;"><span>📱</span> <span id="pdfMobile"></span></div>
+            <div style="display: flex; gap:10px; font-size:12px;"><span>✉️</span> <span id="pdfEmail"></span></div>
+        </div>
+    </div>
+    <!-- back page (only logo) -->
+    <div class="pdf-card-back" style="width: 330px; height: 200px; background: #f7fafd; border-radius: 28px; display: flex; align-items: center; justify-content: center; margin: 15px; box-shadow: 0 0 0 1px #ccc;">
+        <img class="pdf-back-logo" src="" style="max-width:130px; max-height:100px; object-fit:contain;">
+    </div>
+</div>
+
+<script>
+    (function() {
+        // DOM elements
+        const logoInput = document.getElementById('logoInput');
+        const logoPreview = document.getElementById('logoPreview');
+        const frontLogoImg = document.getElementById('frontLogoImg');
+        const backLogoImg = document.getElementById('backLogoImg');
+
+        // text fields
+        const companyName = document.getElementById('companyName');
+        const companyAddress = document.getElementById('companyAddress');
+        const regNo = document.getElementById('regNo');
+        const personName = document.getElementById('personName');
+        const designation = document.getElementById('designation');
+        const mobile = document.getElementById('mobile');
+        const email = document.getElementById('email');
+
+        // preview spans
+        const previewCompanyName = document.getElementById('previewCompanyName');
+        const previewAddress = document.getElementById('previewAddress');
+        const previewReg = document.getElementById('previewReg');
+        const previewPerson = document.getElementById('previewPerson');
+        const previewDesig = document.getElementById('previewDesig');
+        const previewMobile = document.getElementById('previewMobile');
+        const previewEmail = document.getElementById('previewEmail');
+
+        // pdf inner elements (we will update them before print)
+        const pdfCoName = document.getElementById('pdfCoName');
+        const pdfAddr = document.getElementById('pdfAddr');
+        const pdfReg = document.getElementById('pdfReg');
+        const pdfPName = document.getElementById('pdfPName');
+        const pdfDesig = document.getElementById('pdfDesig');
+        const pdfMobile = document.getElementById('pdfMobile');
+        const pdfEmail = document.getElementById('pdfEmail');
+        const pdfFrontLogo = document.querySelector('.pdf-front-logo');
+        const pdfBackLogo = document.querySelector('.pdf-back-logo');
+
+        // default logo as dataURI? we keep null.
+        let currentLogoDataURL = null;
+
+        // update preview from fields
+        function updatePreviews() {
+            previewCompanyName.textContent = companyName.value.trim() || "COMPANY NAME";
+            previewAddress.textContent = companyAddress.value.trim() || "address";
+            previewReg.textContent = regNo.value.trim() || "reg no";
+            previewPerson.textContent = personName.value.trim() || "Person name";
+            previewDesig.textContent = designation.value.trim() || "designation";
+            previewMobile.textContent = mobile.value.trim() || "mobile";
+            previewEmail.textContent = email.value.trim() || "email";
+
+            // logo images: if currentLogoDataURL exists set, else hide
+            if (currentLogoDataURL) {
+                frontLogoImg.src = currentLogoDataURL;
+                frontLogoImg.style.display = 'block';
+                backLogoImg.src = currentLogoDataURL;
+                // also preview small above form
+                logoPreview.src = currentLogoDataURL;
+                logoPreview.style.display = 'block';
+            } else {
+                frontLogoImg.style.display = 'none';
+                backLogoImg.removeAttribute('src');
+                backLogoImg.style.display = 'none'; // but we set block anyway
+                backLogoImg.style.display = 'block';
+                backLogoImg.src = ''; // empty
+                logoPreview.style.display = 'none';
+            }
+        }
+
+        // initial update
+        updatePreviews();
+
+        // logo upload handler
+        logoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    currentLogoDataURL = ev.target.result;
+                    updatePreviews();
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // reset
+                currentLogoDataURL = null;
+                updatePreviews();
+            }
+        });
+
+        // live input updates
+        const textFields = [companyName, companyAddress, regNo, personName, designation, mobile, email];
+        textFields.forEach(field => field.addEventListener('input', updatePreviews));
+
+        // PDF generation
+        document.getElementById('generatePDF').addEventListener('click', function() {
+            // first sync hidden pdf container with current data & logo
+            pdfCoName.textContent = companyName.value.trim() || "COMPANY NAME";
+            pdfAddr.textContent = companyAddress.value.trim() || "address";
+            pdfReg.textContent = regNo.value.trim() || "reg no";
+            pdfPName.textContent = personName.value.trim() || "Person name";
+            pdfDesig.textContent = designation.value.trim() || "designation";
+            pdfMobile.textContent = mobile.value.trim() || "mobile";
+            pdfEmail.textContent = email.value.trim() || "email";
+
+            // logo handling inside hidden container
+            if (currentLogoDataURL) {
+                pdfFrontLogo.src = currentLogoDataURL;
+                pdfBackLogo.src = currentLogoDataURL;
+                pdfFrontLogo.style.display = 'inline';
+                pdfBackLogo.style.display = 'inline';
+            } else {
+                // remove src, hide or keep empty – but we set a default dummy? keep empty, no logo.
+                pdfFrontLogo.removeAttribute('src');
+                pdfBackLogo.removeAttribute('src');
+                pdfFrontLogo.style.display = 'none';
+                pdfBackLogo.style.display = 'none';
+            }
+
+            // we need to apply proper dimensions. The container divs already have styles.
+            // Use html2pdf from the hidden container.
+            const element = document.getElementById('pdfCardsContainer');
+            // make temporarily visible for capture (but keep hidden from user)
+            element.style.display = 'block';
+            element.style.position = 'absolute';
+            element.style.left = '-9999px';
+            element.style.top = '0';
+            element.style.width = '360px';  // enough for one card
+
+            const opt = {
+                margin: [0.5, 0.5, 0.5, 0.5], // small margins
+                filename: 'visiting_card_double_sided.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, allowTaint: false, letterRendering: true },
+                jsPDF: { unit: 'mm', format: [105, 74], orientation: 'landscape' }  // ~88x62mm but card 85.7x54? we adjust
+                // but we want each card ~330px@2 = 660px = 174mm? That's too big. we set format close to 95x60mm
+                // Actually we want PDF roughly credit card size. Let's use 'a7' landscape (105x74mm) and scale cards.
+                // We'll let html2pdf auto-fit inside. The container width approx 360px, scale to fit nicely.
+            };
+
+            // better: custom page size exactly to contain one card per page with some border
+            // Card visual is 330x200px, we output at 2x scale = 660x400px, convert to mm: ~ 174x105mm – too big.
+            // use smaller scale: let html2pdf's default, but set format to [100, 70] mm.
+            const customOpt = {
+                margin: [2, 2, 2, 2],
+                filename: 'business_card_double.pdf',
+                image: { type: 'jpeg', quality: 0.95 },
+                html2canvas: { scale: 1.5, useCORS: true, logging: false },
+                jsPDF: { unit: 'mm', format: [100, 70], orientation: 'landscape' } // roughly card size + border
+            };
+
+            // use a clone to avoid affecting layout? but element is hidden far.
+            html2pdf().set(customOpt).from(element).save().then(() => {
+                // restore visibility
+                element.style.display = 'none';
+                element.style.position = '';
+                element.style.left = '';
+                element.style.top = '';
+            }).catch(err => {
+                alert('PDF generation error: ' + err);
+                element.style.display = 'none';
+            });
+        });
+
+        // ensure back logo visibility even without src
+        // extra: if no logo, back side shows nothing, but that's ok.
+    })();
+</script>
+
+<!-- ensure back logo container behaves -->
+<style>
+    .card-back { background: #f7fafd; }
+    .back-logo { display: block; margin: 0 auto; }
+    #previewBack .back-logo[src=""], #previewBack .back-logo:not([src]) { display: none; }
+    /* fallback */
+    .pdf-card-back img { display: inline-block; }
+</style>
+</body>
+</html>
